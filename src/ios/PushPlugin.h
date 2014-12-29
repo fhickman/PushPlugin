@@ -49,6 +49,10 @@
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
 - (void)didFailToRegisterForRemoteNotificationsWithError:(NSError *)error;
 
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
+- (void)didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings;
+#endif
+
 - (void)setNotificationMessage:(NSDictionary *)notification;
 - (void)notificationReceived;
 
