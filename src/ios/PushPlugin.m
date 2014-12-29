@@ -156,7 +156,13 @@
         [results setValue:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] forKey:@"appVersion"];
 
         // Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
-        NSUInteger rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+		NSUInteger rntypes;
+		if ([[UIApplication sharedApplication] respondsToSelector:@selector(currentUserNotificationSettings)]) {
+			// iOS8 interface to get notification types
+			rntypes = [[[UIApplication sharedApplication] currentUserNotificationSettings] types];
+		} else {
+			rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
+		}
 
         // Set the defaults to disabled unless we find otherwise...
         NSString *pushBadge = @"disabled";
@@ -187,14 +193,29 @@
         [results setValue:dev.model forKey:@"deviceModel"];
         [results setValue:dev.systemVersion forKey:@"deviceSystemVersion"];
 
-		[self successWithMessage:[NSString stringWithFormat:@"%@", token]];
-    #endif
+		if (self.callbackId != nil)
+		{
+			CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:results];
+			[self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
+		}
 }
 
 - (void)didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
 {
 	[self failWithMessage:@"" withError:error];
 }
+
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000
+-(void)didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings {
+	
+	// Check the user notification settings. If they are turned of entirely, then the remote
+	// notification callbacks will never happen. In that case, error out early.
+	if ([notificationSettings types] == UIUserNotificationTypeNone) {
+		// We call the registration a "success" here, but the client code will see the UI notification status
+		[self successWithMessage:@"User notifications are disabled"];
+	}
+}
+#endif
 
 - (void)notificationReceived {
     NSLog(@"Notification received");
